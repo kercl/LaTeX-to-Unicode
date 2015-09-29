@@ -1,5 +1,5 @@
 # LaTeX-to-Unicode
-A small website based on javascript for converting as much LaTeX-tags to their corresponding Unicode-symbols.
+A small website based on javascript for converting as much LaTeX-tags to their corresponding Unicode-symbols as possible.
 A running demo can be found at [this location](http://koes.xyz/l2u/).
 
 The following tags are currently supported (some of them only partially due to lack of suitable symbols):
