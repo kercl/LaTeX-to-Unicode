@@ -1,0 +1,118 @@
+<!DOCTYPE HT	ML>
+<html lang="en">
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8">
+		<title>LaTeX to Unicode</title>
+		
+		<script class="jsbin" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+		<script src="unicodetable.js"></script> 
+		<script src="parse.js"></script> 
+		
+		<script>
+			function setSelectionRange(selectionStart, selectionEnd) {
+				var input = document.getElementById("editbox");
+			
+				if (input.setSelectionRange) {
+					input.focus();
+					input.setSelectionRange(selectionStart, selectionEnd);
+					}
+				else if (input.createTextRange) {
+					var range = input.createTextRange();
+					range.collapse(true);
+					range.moveEnd('character', selectionEnd);
+					range.moveStart('character', selectionStart);
+					range.select();
+				}
+			}
+			
+			function getCaret() { 
+				var el = document.getElementById("editbox");
+			
+				if (el.selectionStart) { 
+					return el.selectionStart; 
+				} else if (document.selection) { 
+					el.focus(); 
+
+					var r = document.selection.createRange(); 
+					if (r == null) { 
+						return 0; 
+					} 
+
+					var re = el.createTextRange(), 
+						rc = re.duplicate(); 
+					re.moveToBookmark(r.getBookmark()); 
+					rc.setEndPoint('EndToStart', re); 
+					
+					return rc.text.length; 
+				}
+				return 0; 
+			}
+			
+			function latex_to_unicode(el) {
+				input = el.value;
+				l2u = parser.parse_str(input, getCaret());
+				el.value = l2u.text;
+				if(l2u.caret >= 0)
+					setSelectionRange(l2u.caret, l2u.caret);
+			}
+		</script>
+		
+		<style>
+			textarea {
+				position:absolute;
+				-webkit-box-sizing: border-box;
+				-moz-box-sizing: border-box;
+				box-sizing: border-box;
+				resize: none;
+				width:100%;
+				left:0px;
+				top:70px;
+				padding-left:30px;
+				padding-right:30px;
+				padding-top:10px;
+				padding-top:10px;
+				border-style:solid none;
+				border-width:1px 0px 0px 0px;
+				border-color:#eee;
+				font-size:1.3em;
+				box-shadow: 0px 10px 20px rgba(0,0,0,0.1) inset;
+				color:#444;
+				border-top: 1px solid #ccc;
+				height: 90%;
+			}
+			h1 {
+				margin-left:20px;
+				color:#aaa;
+				text-shadow: 0px 1px 1px #4d4d4d;
+				color: #222;
+				font: 50px 'LeagueGothicRegular';
+				font-size: 2em;
+				margin-top: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>LaTeX to <span style="color:#272">Unicode</span></h1>
+		<textarea rows="30" id="editbox"></textarea>
+		
+		<script type="text/javascript">
+			$('#editbox').bind('input propertychange', function(self) { latex_to_unicode(this); });
+			$('#editbox').bind('keypress', function(e) {
+				if(e.keyCode >= 37 && e.keyCode <= 40) {
+					var el = document.getElementById("editbox");
+					var car = getCaret();
+					
+					if(car == el.value.length)
+						car = -1;
+					
+					l2u = parser.parse_str(el.value, car);
+					if(l2u.text != el.value) {
+						el.value = l2u.text;
+						if(l2u.caret >= 0)
+							setSelectionRange(l2u.caret, l2u.caret);
+					}
+				}
+			});
+		</script>
+	</body>
+</html>
