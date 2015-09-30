@@ -9,6 +9,16 @@
 		<script src="parse.js"></script> 
 		
 		<script>
+			function show_line_numbers() {
+				var input = document.getElementById("editbox");
+				
+				var htmlcont = "";
+				for(var i = 1; i <= (input.value.match(/\n/g) || []).length + 1; i++) {
+					htmlcont += i + "<br/>";
+				}
+				document.getElementById("line-numbers").innerHTML = htmlcont;
+			}
+		
 			function setSelectionRange(selectionStart, selectionEnd) {
 				var input = document.getElementById("editbox");
 			
@@ -58,45 +68,119 @@
 		</script>
 		
 		<style>
-			textarea {
+			.content-box {
+				display: block;
 				position:absolute;
-				-webkit-box-sizing: border-box;
-				-moz-box-sizing: border-box;
-				box-sizing: border-box;
-				resize: none;
-				width:100%;
-				left:0px;
-				top:70px;
-				padding-left:30px;
-				padding-right:30px;
-				padding-top:10px;
-				padding-top:10px;
-				border-style:solid none;
-				border-width:1px 0px 0px 0px;
-				border-color:#eee;
-				font-size:1.3em;
-				box-shadow: 0px 10px 20px rgba(0,0,0,0.1) inset;
-				color:#444;
-				border-top: 1px solid #ccc;
-				height: 90%;
+				height:auto;
+				bottom:0;
+				top:0;
+				left:0;
+				right:0;
+				margin-top:75px;
+				margin-bottom:90px;
+				margin-right:0px;
+				margin-left:0px;
+				text-align: center;
+				box-shadow: 0px 10px 10px rgba(0,0,0,0.4);
 			}
+			.info-bottom {
+				display: block;
+				position:absolute;
+				height:auto;
+				bottom:-90px;
+				left:0;
+				right:0;
+				height:50px;
+				margin-right:0px;
+				margin-left:0px;
+				background-color:#222;
+				z-index:-1;
+				padding:20px;
+				background: #222 -webkit-repeating-linear-gradient(45deg,rgba(0,0,0,0), rgba(0,0,0,0.1) 11px, rgba(0,0,0,0.2) 12px, rgba(0,0,0,0.1) 13px);
+    			background: #222 -o-repeating-linear-gradient(45deg,rgba(0,0,0,0), rgba(0,0,0,0.1) 11px, rgba(0,0,0,0.2) 12px, rgba(0,0,0,0.1) 13px);
+    			background: #222 -moz-repeating-linear-gradient(45deg,rgba(0,0,0,0), rgba(0,0,0,0.1) 11px, rgba(0,0,0,0.2) 12px, rgba(0,0,0,0.1) 13px);
+    			background: #222 repeating-linear-gradient(45deg,rgba(0,0,0,0), rgba(0,0,0,0.1) 11px, rgba(0,0,0,0.2) 12px, rgba(0,0,0,0.1) 13px);
+			}
+			textarea {
+				width: 100%;
+				height: 100%;
+				padding:10px 10px;
+				box-shadow: 0px 5px 10px rgba(0,0,0,0.05) inset;
+				resize: none;
+				z-index:1;
+				font-family: Arial, Helvetica, sans-serif;
+				line-height: 135%;
+				max-height: 100%;
+				border:none;
+				color:#444;
+			}
+			::selection { background:#b9e7ff; color:#005684; }
+			::-moz-selection { background:#b9e7ff; color:#005684; }
+			::-webkit-selection { background:#b9e7ff; color:#005684; }
 			h1 {
 				margin-left:20px;
 				color:#aaa;
-				text-shadow: 0px 1px 1px #4d4d4d;
-				color: #222;
+				text-shadow: 0px 1px 1px rgba(0,0,0,0.5);
+				color: #353535;
 				font: 50px 'LeagueGothicRegular';
 				font-size: 2em;
 				margin-top: 20px;
+				font-weight: bold;
+			}
+			.info-box-text {
+				color:#bbb;
+				text-shadow: 0px 1px 2px rgba(0,0,0,0.7);
+				font: 50px 'LeagueGothicRegular';
+				font-size: 1.05em;
+				margin-top: 20px;
+			}
+			td.line-counter {
+				font-family: Arial, Helvetica, sans-serif;
+				line-height: 135%;
+				color:#888;
+			}
+			a {
+				color: #61c7ff;
+				-o-transition:.5s;
+				-ms-transition:.5s;
+				-moz-transition:.5s;
+				-webkit-transition:.5s;
+				transition:.5s;
+			}
+			a:visited {
+				color: #61c7ff;
+			}
+			a:hover {
+				color: #8dd7ff;
+			}
+			a:active {
+				color: #61c7ff;
 			}
 		</style>
 	</head>
 	<body>
-		<h1>LaTeX to <span style="color:#272">Unicode</span></h1>
-		<textarea rows="30" id="editbox"></textarea>
+		<h1>LaTeX to <span style="color:#ccc">Unicode</span></h1>
+		<div class="content-box">
+			<table cellspacing="0" cellpadding="0" style="height:100%;width:100%;border:none">
+			<tr>
+			<td class="line-counter" id="line-numbers" style="width:30px;text-align:right;padding:11px;background-color:#ccc" valign="top">1</td>
+			<td style="border-top:1px solid #ccc">
+			<textarea wrap="off" rows="30" id="editbox"></textarea>
+			</tr></td>
+			</table>
+			<div class="info-bottom">
+				<table cellspacing="0" cellpadding="0" style="margin-left:auto;margin-right:auto">
+				<tr><td>
+				<img src="github-logo.svg" style="width:48px;height:48px;vertical-align:middle" />
+				</td><td class="info-box-text" style="padding-left:20px">
+				For a detailed description,<br/>check out the <a href="https://github.com/koe-/LaTeX-to-Unicode">GitHub-Repo</a>
+				<td></tr>
+				</table>
+			</div>
+		</div>
 		
 		<script type="text/javascript">
-			$('#editbox').bind('input propertychange', function(self) { latex_to_unicode(this); });
+			$('#editbox').bind('input propertychange', function(self) { latex_to_unicode(this); show_line_numbers(); });
 			$('#editbox').bind('keypress', function(e) {
 				if(e.keyCode >= 37 && e.keyCode <= 40) {
 					var el = document.getElementById("editbox");
@@ -113,6 +197,7 @@
 					}
 				}
 			});
+			show_line_numbers();
 		</script>
 	</body>
 </html>
