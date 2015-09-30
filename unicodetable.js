@@ -1,14 +1,4 @@
 tag_table = {
-	replace_chars: function(x, table) {
-		var res = "";
-		for(i in x)
-			if(x[i] in table)
-				res = res + table[x[i]];
-			else
-				res = res + x[i];
-		return res;
-	},
-
 	"\\{":                  {type:"symbol",value:"\u200B{"},
 	"\\$":                  {type:"symbol",value:"\u200B$"},
 	"\\\\":                 {type:"symbol",value:"\u200B\\"},
@@ -263,7 +253,7 @@ tag_table = {
 	"\\dot": {type: "decorator", value: function(x) { return x.replace(/(.{1})/g,"$1\u0307"); }},
 	"\\not": {type: "decorator", value: function(x) {
 			var table = {"=":"≠", "<":"≮", ">":"≯", "≤":"≰", "≥":"≱", "∃":"∄"};
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}},
 	"\\mathfrak": {type: "decorator", value: function(x) {
 			var table = {"A": "𝔄", "N": "𝔑", "a": "𝔞", "n": "𝔫",
@@ -279,7 +269,7 @@ tag_table = {
 						"K": "𝔎", "X": "𝔛", "k": "𝔨", "x": "𝔵",
 						"L": "𝔏", "Y": "𝔜", "l": "𝔩", "y": "𝔶",
 						"M": "𝕸", "Z": "𝖅", "m": "𝔪", "z": "𝔷"};
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}},
 	"\\frac": {type: "decorator2", value: function(x,y) {
 			var table = {"1/4": "¼", 
@@ -299,7 +289,24 @@ tag_table = {
 						"7/8": "⅞"}
 			if(x+"/"+y in table)
 				return table[x+"/"+y];
-			return "(" + x + ")/(" + y + ")";
+			
+			var ssx = tag_table["^"].value(x),
+			    ssy = tag_table["_"].value(y);
+			
+			if(parser.strings_disjoint(ssx, x) && parser.strings_disjoint(ssy, y))
+				return "(" + ssx + "/" + ssy + ")";
+			
+			console.log(x + " == " + x.match(/[_0-9a-zA-Z⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂᵅᵝᵞᵟᵋᶿᶥᶲᵠᵡ₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓᵦᵧᵨᵩᵪᴀʙcᴅᴇꜰɢʜıᴊᴋʟᴍɴoᴘʀꜱᴛᴜvwxʏz]+/g));
+			console.log(y + " == " + y.match(/[_0-9a-zA-Z⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂᵅᵝᵞᵟᵋᶿᶥᶲᵠᵡ₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓᵦᵧᵨᵩᵪᴀʙcᴅᴇꜰɢʜıᴊᴋʟᴍɴoᴘʀꜱᴛᴜvwxʏz]+/g));
+			
+			if(x.match(/[_0-9a-zA-Z⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂᵅᵝᵞᵟᵋᶿᶥᶲᵠᵡ₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓᵦᵧᵨᵩᵪᴀʙcᴅᴇꜰɢʜıᴊᴋʟᴍɴoᴘʀꜱᴛᴜvwxʏz]+/g) != x
+			&& x.length != 1)
+				x = "(" + x + ")";
+			if(y.match(/[_0-9a-zA-Z⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂᵅᵝᵞᵟᵋᶿᶥᶲᵠᵡ₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓᵦᵧᵨᵩᵪᴀʙcᴅᴇꜰɢʜıᴊᴋʟᴍɴoᴘʀꜱᴛᴜvwxʏz]+/g) != y
+			&& y.length != 1)
+				y = "(" + y + ")";
+			
+			return "(" + x + "/" + y + ")";
 		}},
 	"\\mathcal": {type: "decorator", value: function(x) {
 			var table = {"A": "𝓐", "N": "𝓝", "a": "𝓪", "n": "𝓷",
@@ -315,7 +322,7 @@ tag_table = {
 						"K": "𝓚", "X": "𝓧", "k": "𝓴", "x": "𝔁",
 						"L": "𝓛", "Y": "𝓨", "l": "𝓵", "y": "𝔂",
 						"M": "𝓜", "Z": "𝓩", "m": "𝓶", "z": "𝔃"};
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}},
 	"\\mathbb": {type: "decorator", value: function(x) {
 			var table = {"A": "𝔸", "N": "ℕ", "a": "𝕒", "n": "𝕟",
@@ -334,7 +341,7 @@ tag_table = {
 						"0": "𝟘", "3": "𝟛", "6": "𝟞", "9": "𝟡",
 						"1": "𝟙", "4": "𝟜", "7": "𝟟",
 						"2": "𝟚", "5": "𝟝", "8": "𝟠"};
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}},
 	"\\textbf": {type: "decorator", 
 			value: function(x){ 
@@ -352,7 +359,7 @@ tag_table = {
 						"E": "𝐄", "L": "𝐋", "S": "𝐒", "Z": "𝐙",
 						"F": "𝐅", "M": "𝐌", "T": "𝐓",
 						"G": "𝐆", "N": "𝐍", "U": "𝐔"};
-				return tag_table.replace_chars(x, table);
+				return parser.replace_chars(x, table);
 			}
 		},
 	"\\textit": {type: "decorator", 
@@ -371,7 +378,7 @@ tag_table = {
 							"L": "𝘓", "Y": "𝘠", "l": "𝘭", "y": "𝘺",
 							"M": "𝘔", "Z": "𝘡", "m": "𝘮", "z": "𝘻"
 							};
-				return tag_table.replace_chars(x, table);
+				return parser.replace_chars(x, table);
 			}
 		},
 	"^": {type: "decorator",
@@ -389,7 +396,7 @@ tag_table = {
 						"β":"ᵝ", "γ":"ᵞ", "δ":"ᵟ", "ε":"ᵋ", "θ":"ᶿ", "ι":"ᶥ", 
 						"ϕ":"ᶲ", "φ":"ᵠ", "χ":"ᵡ"};
 	
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}},
 	"_": {type: "decorator",
 		value: function(x) {
@@ -405,6 +412,6 @@ tag_table = {
 						"T":"ᴛ", "U":"ᴜ", "V":"v", "W":"w", "X":"x", "Y":"ʏ",
 						"Z":"z", "χ":"ᵪ"};
 			console.log("subdecorator: " + x);
-			return tag_table.replace_chars(x, table);
+			return parser.replace_chars(x, table);
 		}}
 };
