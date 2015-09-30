@@ -1,4 +1,24 @@
 parser = {
+	replace_chars: function(x, table) {
+		var res = "";
+		for(i in x)
+			if(x[i] in table)
+				res = res + table[x[i]];
+			else
+				res = res + x[i];
+		return res;
+	},
+	
+	strings_disjoint: function(x, y) {
+		if(x.length != y.length)
+			return false;
+		
+		for(var i = 0; i < x.length; i++)
+			if(x[i] == y[i])
+				return false;
+		return true;
+	},
+
 	optimize: function(tokens) {	
 		var single = "";
 		var sliceat = -1;
@@ -126,8 +146,7 @@ parser = {
 	
 	parse: function(tokens) {
 		this.parse_depth++;
-		//console.log("-->".repeat(this.parse_depth) + tokens);
-	
+		
 		var res = "";
 		var cursorpos = -1;
 		
@@ -148,6 +167,8 @@ parser = {
 			}
 			
 			if(tokens[i].object == "{" || tokens[i].object == "}") {
+				console.log("cbracket: ")
+				console.log(	tokens[i]);
 				if(tokens[i].closed != true)
 					res = res + tokens[i].object;
 				if(tokens[i].caret != undefined && tokens[i].object == "}") {
@@ -201,10 +222,13 @@ parser = {
 								}else {
 									res = res + tokens[init_i].object;
 									i = init_i;
-									if(tokens[i].object == "{") {
-										tokens[i].closed = undefined;
-										tokens[i + 1 + subblock.length].closed = undefined;
+									if(tokens[i + 1].object == "{") {
+										tokens[i + 1].closed = undefined;
+										console.log(tokens[i + subblock.length]);
+										tokens[i + subblock.length].closed = undefined;
 									}
+									console.log("frac not finished:");
+									console.log(tokens);
 								}
 							}else {
 								res = res + tokens[i].object;
