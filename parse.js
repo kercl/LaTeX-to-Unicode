@@ -9,6 +9,17 @@ parser = {
 		return res;
 	},
 	
+	trim_tokens: function(tokens) {
+		var beg = 0, end = tokens.length - 1;
+		for(; beg < tokens.length; beg++)
+			if(!this.whitespace(tokens[beg].object))
+				break;
+		for(; end >= 0; end--)
+			if(!this.whitespace(tokens[end].object))
+				break;
+		return tokens.slice(beg, end);
+	},
+
 	strings_disjoint: function(x, y) {
 		if(x.length != y.length)
 			return false;
@@ -25,7 +36,7 @@ parser = {
 		
 		for(var i = 0; i < tokens.length; i++) {
 			if((tokens[i].object.length == 1 &&
-			   "_^{}".indexOf(tokens[i].object) == -1) || this.whitespace(tokens[i].object))
+			   "_^{}$".indexOf(tokens[i].object) == -1) || this.whitespace(tokens[i].object))
 				single = single + tokens[i].object;
 			else {
 				sliceat = i;
@@ -44,7 +55,7 @@ parser = {
 		
 		while(str != "") {
 			var s = "";
-			if("_^{}".indexOf(str[0]) > -1) {
+			if("_^{}$".indexOf(str[0]) > -1) {
 				s = str[0];
 			}else if(str[0] == '\\') {
 				s = str.match(/^\\([a-zA-Z]+|\$|\\|\{|\}| |\_|\^)/g);
@@ -80,14 +91,17 @@ parser = {
 		return (tok.object[0] == "\\" && tok.object.length > 1) || tok.object == "^" || tok.object == "_";
 	},
 	
-	extract_block: function(tokens, begin) {
+	extract_block: function(tokens, begin, start_token, end_token) {
+		start_token = typeof start_token !== 'undefined' ? start_token : "{";
+		end_token = typeof end_token !== 'undefined' ? end_token : "}";
+
 		if(tokens[begin] == undefined)
 			return [];
 		
 		if((this.tag(tokens[begin]) || tokens[begin].object == "\\") && tokens[begin].caret != undefined)
 			return [];
 		
-		if(tokens[begin].object != "{")
+		if(tokens[begin].object != start_token)
 			return [tokens[begin]];
 		if(tokens[begin].closed != true)
 			return [];
@@ -96,9 +110,9 @@ parser = {
 		var res = [tokens[begin]];
 		
 		for(var i = begin+1; i < tokens.length; i++) {
-			if(tokens[i].object == "{")
+			if(tokens[i].object == start_token)
 				bc++;
-			else if(tokens[i].object == "}") {
+			else if(tokens[i].object == end_token) {
 				bc--;
 				if(bc == 0) {
 					res.push(tokens[i]);
@@ -115,11 +129,22 @@ parser = {
 		return str;
 	},
 	
+	reformat_math: function(str) {
+		var res = tag_table["\\textit"].value(str.replace(/\\ /g, "\u00A0"));
+		res = res.replace(/ /g, "");
+		return res.replace(/[><=≌≊≆≈⋍∽≅⋞⋟⪖⪕⩵≡≧⩾≥⟵≫⪊≩⪈≳⪆⋛⪌≷⇔↔≦⩽⪅⋚⪋≲≤⪉≨⪇≴←⟵⇐↔⇔→⟶⇒↦≹∈∋∌∉≸≮≯≠≾≼≼⪹⪵⇒≿⫅⊆⫋⊊⊂≽≽⪺⪶⋩≻⫆⊇⫌⊋⊃⋑⋐]|:./g, function(x) {
+			if(x.match(/:./g))
+				return ": " + x[1];
+			return "\u2009" + x + "\u2009";
+		}).trim();
+	},
+
 	parse_str: function(str, cursorpos) {
-		var bracketstack = [];
+		var bracketstack = [], beginstack = [];
 		var tokens = this.tokenize(str);
 		
 		var carettrace = 0;
+		var mathmodebegin = -1;
 		
 		for(var i = 0; i < tokens.length; i++) {
 			if(tokens[i].object == "{") {
@@ -130,6 +155,23 @@ parser = {
 				bracketstack.pop();
 			}
 			
+			if(tokens[i].object == "\\begin") {
+				beginstack.push(i);
+			}else if(tokens[i].object == "\\end" && beginstack.length > 0) {
+				tokens[beginstack[beginstack.length-1]].closed = true;
+				tokens[i].closed = true;
+				beginstack.pop();
+			}
+
+			if(tokens[i].object == "$") {
+				if(mathmodebegin != -1) {
+					tokens[mathmodebegin].closed = true;
+					tokens[i].closed = true;
+				}else {
+					mathmodebegin = i;
+				}
+			}
+
 			if(cursorpos > carettrace && cursorpos <= carettrace + tokens[i].object.length)
 				tokens[i].caret = cursorpos - carettrace;
 			carettrace = carettrace + tokens[i].object.length;
@@ -137,29 +179,74 @@ parser = {
 		
 		for(var i = 0; i < bracketstack.length; i++)
 			tokens[bracketstack[i]].closed = false;
-		
+		for(var i = 0; i < beginstack.length; i++)
+			tokens[beginstack[i]].closed = false;
+
 		var res = this.parse(tokens);
-		//res.text = res.text.replace(/\\/g, "\u200B");
 		return res;
 	},
-	parse_depth:0,
+
+	"itemize": function(tokens) {
+		console.log("itemize");
+
+		var tmp_tokens = [];
+		for(var i = 0; i < tokens.length - 1; i++) {
+			if(tokens[i].object == "\\item" && this.whitespace(tokens[i + 1].object)) {
+				tmp_tokens.push(tokens[i]);
+				i = i + 1;
+			}else if(tokens[i + 1].object == "\\item" && this.whitespace(tokens[i].object)) {
+			}else if(tokens[i].object.indexOf("\n") > -1) {
+				tmp_tokens.push({object:"\n"});
+			}else {
+				tmp_tokens.push(tokens[i]);
+			}
+		}
+		console.log(tmp_tokens);
+		tag_table["\\item"] = {type:"symbol",value:"\n   • "};
+		var res = this.parse(tmp_tokens);
+		tag_table["\\item"] = undefined;
+
+		res.text = res.text.replace(/\n(   • )?/g, function(x) { if(x.length == 1) return "\n     "; else return x; }) + "\n\n";
+
+		return res;
+	},
+
+	"theorem": function(tokens) {
+		var res = this.parse(this.trim_tokens(tokens));
+		res.text = tag_table["\\textbf"].value("Theorem: ") + res.text + "\n";
+		return res;
+	},
+
+	"proof": function(tokens) {
+		var res = this.parse(this.trim_tokens(tokens));
+		res.text = tag_table["\\textbf"].value("Proof: ") + res.text + "\n\u200F□\u200F\n";
+		return res;
+	},
 	
+	"align*": function(tokens) {
+		var res = this.parse( [{object:"$",closed:true}].concat(this.trim_tokens(tokens)).concat([{object:"$",closed:true}]) );
+		res.text = "\n    " + res.text.replace(/\n/g, "\n    ") + "\n\n";
+		return res;
+	},
+
+	parse_depth:0,
 	parse: function(tokens) {
 		this.parse_depth++;
-		
-		var res = "";
+
+		var res = "", mathmode = null;
 		var cursorpos = -1;
-		
+
 		var decorator_stack = [];
-		
+
 		for(var i = 0; i < tokens.length; i++) {
 			if(tokens[i].caret != undefined && tokens[i].closed == undefined) {
-				if(tokens[i].object != "\\\\" 
+				if(tokens[i].object != "\\\\"
 				&& tokens[i].object != "\\_" 
-				&& tokens[i].object != "\\}" 
+				&& tokens[i].object != "\\}"
 				&& tokens[i].object != "\\{"
 				&& tokens[i].object != "\\$"
-				&& tokens[i].object != "\\^") {
+				&& tokens[i].object != "\\^"
+				&& tokens[i].object != "\\$") {
 					cursorpos = res.length + tokens[i].caret;
 					res = res + tokens[i].object;
 					continue;
@@ -167,12 +254,18 @@ parser = {
 			}
 			
 			if(tokens[i].object == "{" || tokens[i].object == "}") {
-				console.log("cbracket: ")
-				console.log(	tokens[i]);
 				if(tokens[i].closed != true)
 					res = res + tokens[i].object;
 				if(tokens[i].caret != undefined && tokens[i].object == "}") {
 					cursorpos = cursorpos + res.length + 1;
+				}
+			}else if(tokens[i].object == "$" && tokens[i].closed == true) {
+				if(mathmode == null) {
+					mathmode = res;
+					res = "";
+				}else {
+					res = mathmode + this.reformat_math(res);
+					mathmode = null;
 				}
 			}else {
 				if(this.tag(tokens[i])) {
@@ -230,6 +323,47 @@ parser = {
 									console.log("frac not finished:");
 									console.log(tokens);
 								}
+							}else {
+								res = res + tokens[i].object;
+							}
+						}else
+							res = res + tokens[i].object;
+					}else if(tokens[i].object == "\\begin" && i+1 < tokens.length) {
+						if(tokens[i+1].object == "{") {
+							var subblock = this.extract_block(tokens, i, "\\begin", "\\end");
+							var argument = this.extract_block(tokens, i+1);
+							if(argument.length > 0) {
+								tokens[i+1].closed = false;
+								tokens[i+argument.length].closed = false;
+
+								if(subblock.length > 0) {
+									var argument_parsed = this.parse(argument.slice(1,argument.length-1));
+									if(argument_parsed.text != this.parse(this.extract_block(tokens, i + subblock.length)).text) {
+										res = res + tokens[i].object;
+										continue;
+									}
+									if(argument_parsed.text in this) {
+										i = i + subblock.length + argument.length;
+										var parsed_block = this[argument_parsed.text](subblock.slice(argument.length + 1, subblock.length));
+										res = res + parsed_block.text;
+
+									}else {
+										res = res + tokens[i].object;
+									}
+								}else
+									res = res + tokens[i].object;
+							}else {
+								res = res + tokens[i].object;
+							}
+						}else
+							res = res + tokens[i].object;
+					}else if(tokens[i].object == "\\end" && i+1 < tokens.length) {
+						if(tokens[i+1].object == "{") {
+							var argument = this.extract_block(tokens, i+1);
+							if(argument.length > 0) {
+								tokens[i+1].closed = false;
+								tokens[i+argument.length].closed = false;
+								res = res + tokens[i].object;
 							}else {
 								res = res + tokens[i].object;
 							}
